@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, Alert, Platform } from "react-native";
+import { View, Text, Pressable, Alert } from "react-native";
 import { api } from "../lib/api";
 import { getCurrentCoords } from "../lib/location";
 import { dialEmergencyUK } from "../lib/sos";
@@ -26,9 +26,18 @@ export default function Home() {
       wsRef.current = ws;
 
       ws.onopen = () => {};
-      ws.onerror = () => {};
+      ws.onerror = () => {
+        Alert.alert("Live updates unavailable", "Connection issues detected. Use Update Location manually.");
+      };
 
-      dialEmergencyUK();
+      try {
+        await dialEmergencyUK();
+      } catch (error: any) {
+        Alert.alert(
+          "Emergency dialer unavailable",
+          error?.message || "Please call emergency services manually."
+        );
+      }
 
       Alert.alert(
         "SOS started",
@@ -46,8 +55,8 @@ export default function Home() {
       const updated = await api.alerts.updateLocation(activeAlertId, coords.lat, coords.lng);
       wsRef.current?.send(JSON.stringify({ type: "location", ...coords, alert_id: activeAlertId }));
       return updated;
-    } catch (e) {
-      // Keep quiet; user might be in stress state.
+    } catch (e: any) {
+      Alert.alert("Location update failed", e?.message || "Please try again.");
     }
   }
 
