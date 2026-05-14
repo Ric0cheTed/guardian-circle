@@ -5,6 +5,14 @@ node_modules/
 dist/
 web-build/
 
+# Local smoke/test artifacts
+.smoke/
+*.log
+tmp-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+
 # Env files
 .env
 .env.local

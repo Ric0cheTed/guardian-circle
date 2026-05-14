@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Redirect, useRouter } from "expo-router";
+import { LegalLinks } from "@/components/legal-links";
 
 import { acknowledgeSafetyNotice } from "./lib/onboarding";
 import { loadLaunchState } from "./lib/session";
@@ -165,6 +166,8 @@ export default function OnboardingScreen() {
           location sharing may be delayed or inaccurate.
         </Text>
       </View>
+
+      <LegalLinks align="left" />
 
       <Pressable
         onPress={continueToApp}

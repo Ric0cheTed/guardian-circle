@@ -13,6 +13,7 @@ class AlertOut(BaseModel):
     id: int
     status: str
     created_at: datetime
+    last_location_at: datetime | None
     last_lat: float | None
     last_lng: float | None
     class Config:

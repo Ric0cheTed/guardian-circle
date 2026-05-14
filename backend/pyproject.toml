@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.110",
+  "httpx>=0.27",
   "uvicorn[standard]>=0.27",
   "sqlalchemy>=2.0",
   "psycopg[binary]>=3.1",
@@ -11,6 +12,8 @@ dependencies = [
   "pydantic-settings>=2.2",
   "python-jose[cryptography]>=3.3",
   "passlib[bcrypt]>=1.7",
+  # passlib 1.7.x does not work correctly with bcrypt 5.x in our auth flow.
+  "bcrypt>=4,<5",
   "alembic>=1.13",
   "python-multipart>=0.0.9"
 ]

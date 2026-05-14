@@ -22,6 +22,7 @@ python -m venv .venv
 # source .venv/bin/activate
 
 pip install -e .
+python -m app.smoke_auth
 uvicorn app.main:app --reload --port 8000
 ```
 

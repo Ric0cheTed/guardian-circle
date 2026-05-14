@@ -13,6 +13,7 @@ function resolveApiUrl() {
 }
 
 const API_URL = resolveApiUrl();
+const ALERT_LOCATION_UPDATE_TIMEOUT_MS = 12_000;
 
 let token: string | null = null;
 
@@ -20,15 +21,67 @@ export function setToken(t: string | null) {
   token = t;
 }
 
-async function req(path: string, opts: RequestInit = {}) {
+type RequestOptions = RequestInit & {
+  timeoutMs?: number;
+};
+
+async function req(path: string, opts: RequestOptions = {}) {
+  const { timeoutMs, signal, ...fetchOptions } = opts;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(opts.headers as any),
+    ...(fetchOptions.headers as any),
   };
 
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...opts, headers });
+  const controller =
+    timeoutMs && typeof AbortController !== "undefined"
+      ? new AbortController()
+      : null;
+
+  const abortFromSignal = () => {
+    controller?.abort();
+  };
+
+  if (controller && signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener("abort", abortFromSignal, { once: true });
+    }
+  }
+
+  const timeoutId =
+    controller && timeoutMs
+      ? setTimeout(() => {
+          controller.abort();
+        }, timeoutMs)
+      : null;
+
+  let res: Response;
+
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...fetchOptions,
+      headers,
+      signal: controller?.signal ?? signal,
+    });
+  } catch (error) {
+    if (controller?.signal.aborted && timeoutMs) {
+      throw new Error("Request timed out");
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    if (controller && signal) {
+      signal.removeEventListener("abort", abortFromSignal);
+    }
+  }
+
   const text = await res.text();
 
   let data: any = null;
@@ -58,6 +111,7 @@ export const api = {
       if (!res.ok) throw new Error(data?.detail || "Login failed");
       return data as { access_token: string; token_type: string };
     },
+    deleteAccount: () => req("/auth/me", { method: "DELETE" }),
   },
   contacts: {
     list: () => req("/contacts/"),
@@ -72,11 +126,28 @@ export const api = {
     list: () => req("/alerts/"),
     create: (lat?: number, lng?: number) =>
       req("/alerts/", { method: "POST", body: JSON.stringify({ lat, lng }) }),
+    deleteHistory: () => req("/alerts/history", { method: "DELETE" }),
+    listNotifications: (id: number) => req(`/alerts/${id}/notifications`),
     updateLocation: (id: number, lat: number, lng: number) =>
       req(`/alerts/${id}/location`, {
         method: "POST",
         body: JSON.stringify({ lat, lng }),
+        timeoutMs: ALERT_LOCATION_UPDATE_TIMEOUT_MS,
       }),
     resolve: (id: number) => req(`/alerts/${id}/resolve`, { method: "POST" }),
+    createWatcherToken: (id: number) =>
+      req(`/alerts/${id}/watcher-token`, { method: "POST" }),
+  },
+  watcher: {
+    get: (token: string) => req(`/alerts/watcher/${encodeURIComponent(token)}`),
+    subscribePush: (token: string, expoPushToken: string) =>
+      req(`/alerts/watcher/${encodeURIComponent(token)}/push-subscription`, {
+        method: "POST",
+        body: JSON.stringify({ expo_push_token: expoPushToken }),
+      }),
+    unsubscribePush: (token: string) =>
+      req(`/alerts/watcher/${encodeURIComponent(token)}/push-subscription`, {
+        method: "DELETE",
+      }),
   },
 };

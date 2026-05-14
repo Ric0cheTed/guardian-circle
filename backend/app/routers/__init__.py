@@ -1,1 +1,1 @@
-from . import auth, contacts, alerts, ws
+from . import auth, contacts, alerts, watcher_pages, ws

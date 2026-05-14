@@ -1,5 +1,6 @@
 pyproject.toml
 app/main.py
+app/smoke_auth.py
 app/core/config.py
 app/core/database.py
 app/core/security.py

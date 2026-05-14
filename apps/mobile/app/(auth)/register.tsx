@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { LegalLinks } from "@/components/legal-links";
 import { api } from "../lib/api";
 
 export default function Register() {
@@ -73,6 +74,8 @@ export default function Register() {
       >
         <Text>Back to login</Text>
       </Pressable>
+
+      <LegalLinks />
     </View>
   );
 }
